@@ -1,0 +1,95 @@
+import sqlite3
+import tkinter as tk
+from tkinter import messagebox
+
+# Função para conectar ao banco de dados
+def connect_db():
+    conn = sqlite3.connect('biblioteca.db')
+    cursor = conn.cursor()
+    return conn, cursor
+
+# Função para buscar livros por palavras no título ou autor
+def search_livro():
+    termo_busca = entry_search.get()
+    if not termo_busca:
+        messagebox.showwarning('Erro', 'Digite um termo de busca!')
+        return
+    conn, cursor = connect_db()
+
+    # Consulta que relaciona o livro com o autor e permite buscar pelo título ou nome do autor
+    cursor.execute('''
+        SELECT Livros.Titulo, Autores.Nome, Livros.AnoPublicacao, Livros.Genero 
+        FROM Livros 
+        JOIN Autores ON Livros.AutorID = Autores.ID
+        WHERE Livros.Titulo LIKE ? OR Autores.Nome LIKE ?
+    ''', ('%' + termo_busca + '%', '%' + termo_busca + '%'))
+    
+    resultados = cursor.fetchall()
+    conn.close()
+    
+    livros_list.delete(0, tk.END)
+    if resultados:
+        for livro in resultados:
+            livros_list.insert(tk.END, f'Título: {livro[0]}, Autor: {livro[1]}, Ano: {livro[2]}, Gênero: {livro[3]}')
+    else:
+        livros_list.insert(tk.END, 'Nenhum resultado encontrado.')
+
+# Interface gráfica com Tkinter
+root = tk.Tk()
+root.title('Sistema de Biblioteca')
+
+# Frame para adicionar autores
+frame_autor = tk.LabelFrame(root, text='Adicionar Autor')
+frame_autor.grid(row=0, column=0, padx=10, pady=10)
+
+tk.Label(frame_autor, text='Nome:').grid(row=0, column=0)
+entry_nome_autor = tk.Entry(frame_autor)
+entry_nome_autor.grid(row=0, column=1)
+
+tk.Label(frame_autor, text='Nacionalidade:').grid(row=1, column=0)
+entry_nacionalidade_autor = tk.Entry(frame_autor)
+entry_nacionalidade_autor.grid(row=1, column=1)
+
+tk.Button(frame_autor, text='Adicionar Autor', command=add_autor).grid(row=2, columnspan=2, pady=5)
+
+# Frame para adicionar livros (sem AutorID manual)
+frame_livro = tk.LabelFrame(root, text='Adicionar Livro')
+frame_livro.grid(row=1, column=0, padx=10, pady=10)
+
+tk.Label(frame_livro, text='Título:').grid(row=0, column=0)
+entry_titulo_livro = tk.Entry(frame_livro)
+entry_titulo_livro.grid(row=0, column=1)
+
+tk.Label(frame_livro, text='Nome Autor:').grid(row=1, column=0)
+entry_autor_nome = tk.Entry(frame_livro)
+entry_autor_nome.grid(row=1, column=1)
+
+tk.Label(frame_livro, text='Ano Publicação:').grid(row=2, column=0)
+entry_ano_livro = tk.Entry(frame_livro)
+entry_ano_livro.grid(row=2, column=1)
+
+tk.Label(frame_livro, text='Gênero:').grid(row=3, column=0)
+entry_genero_livro = tk.Entry(frame_livro)
+entry_genero_livro.grid(row=3, column=1)
+
+tk.Button(frame_livro, text='Adicionar Livro', command=add_livro).grid(row=4, columnspan=2, pady=5)
+
+# Frame para busca de livros
+frame_busca = tk.LabelFrame(root, text='Buscar Livro')
+frame_busca.grid(row=2, column=0, padx=10, pady=10)
+
+tk.Label(frame_busca, text='Palavras no Título ou Autor:').grid(row=0, column=0)
+entry_search = tk.Entry(frame_busca)
+entry_search.grid(row=0, column=1)
+
+tk.Button(frame_busca, text='Buscar', command=search_livro).grid(row=1, columnspan=2, pady=5)
+
+# Frame para visualizar dados
+frame_visualizar = tk.LabelFrame(root, text='Resultados da Busca')
+frame_visualizar.grid(row=0, column=1, rowspan=3, padx=10, pady=10)
+
+# Lista para mostrar os livros
+livros_list = tk.Listbox(frame_visualizar, height=10, width=50)
+livros_list.grid(row=0, column=0)
+
+root.mainloop()
